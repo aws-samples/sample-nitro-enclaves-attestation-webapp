@@ -1,0 +1,47 @@
+version: 0.0
+os: linux
+files:
+  # Copy EIF and metadata to deployment directory
+  - source: enclave/attestation-enclave.eif
+    destination: /opt/nitro-attestation/
+  - source: enclave/metadata.json
+    destination: /opt/nitro-attestation/
+  # Copy proxy code (the TCP-to-vsock bridge that fronts the enclave)
+  - source: proxies/
+    destination: /opt/nitro-attestation/proxies/
+  # Copy systemd services
+  - source: systemd/
+    destination: /etc/systemd/system/
+
+permissions:
+  - object: /opt/nitro-attestation
+    pattern: "**"
+    owner: root
+    group: root
+    mode: 755
+  - object: /etc/systemd/system/enclave-inbound-proxy.service
+    owner: root
+    group: root
+    mode: 644
+  - object: /etc/systemd/system/enclave-launcher.service
+    owner: root
+    group: root
+    mode: 644
+
+hooks:
+  BeforeInstall:
+    - location: deploy/scripts/before-install.sh
+      timeout: 120
+      runas: root
+  AfterInstall:
+    - location: deploy/scripts/after-install.sh
+      timeout: 300
+      runas: root
+  ApplicationStart:
+    - location: deploy/scripts/application-start.sh
+      timeout: 300
+      runas: root
+  ValidateService:
+    - location: deploy/scripts/validate-service.sh
+      timeout: 120
+      runas: root

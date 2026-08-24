@@ -1,0 +1,2269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binding a Web App to an Attested Nitro Enclave with HPKE</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js" integrity="sha384-R63zfMfSwJF4xCR11wXii+QUsbiBIdiDzDbtxia72oGWfkT7WHJfmD/I/eeHPJyT" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --accent-secondary: #238636;
+            --accent-purple: #a371f7;
+            --accent-orange: #d29922;
+            --border: #30363d;
+            --border-light: #3d444d;
+            --code-bg: #1f2428;
+            --warning: #d29922;
+            --error: #f85149;
+            --success: #3fb950;
+            --gradient-start: #58a6ff;
+            --gradient-end: #a371f7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 14px 0;
+        }
+
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+        }
+
+        nav h1 {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        nav h1 .icon {
+            font-size: 1.3rem;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 20px;
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            color: var(--accent);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 140px 0 80px;
+            text-align: center;
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero h2 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin: 0 auto 36px;
+            line-height: 1.6;
+        }
+
+        .hero .meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .badge-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Blog-style article sections */
+        article {
+            padding: 60px 0;
+        }
+
+        article section {
+            margin-bottom: 80px;
+        }
+
+        article h2 {
+            font-size: 1.9rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        article h3 {
+            font-size: 1.35rem;
+            margin: 36px 0 16px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        article h4 {
+            font-size: 1.05rem;
+            margin: 24px 0 10px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        article p {
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+            line-height: 1.8;
+        }
+
+        article p strong {
+            color: var(--text-primary);
+        }
+
+        article a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        article a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* Lead paragraph */
+        .lead {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+
+        /* Code Blocks */
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px 20px;
+            overflow-x: auto;
+            margin: 18px 0;
+            font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background: var(--bg-tertiary);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--accent);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .code-header {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+        }
+
+        .code-header + pre {
+            border-radius: 0 0 8px 8px;
+            margin-top: 0;
+        }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 24px 0;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card p {
+            margin-bottom: 0;
+            font-size: 0.9rem;
+        }
+
+        /* Mermaid Diagrams */
+        .mermaid {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px 24px;
+            margin: 28px 0;
+            overflow-x: auto;
+            text-align: center;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .diagram-caption {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: -16px;
+            margin-bottom: 28px;
+            font-style: italic;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 18px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        td {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        td code {
+            color: var(--accent);
+            font-size: 0.8rem;
+        }
+
+        /* Alerts / Callouts */
+        .callout {
+            padding: 18px 20px;
+            border-radius: 8px;
+            margin: 24px 0;
+            border-left: 4px solid;
+            font-size: 0.9rem;
+        }
+
+        .callout-info {
+            background: rgba(88, 166, 255, 0.08);
+            border-color: var(--accent);
+        }
+
+        .callout-warning {
+            background: rgba(210, 153, 34, 0.08);
+            border-color: var(--warning);
+        }
+
+        .callout-success {
+            background: rgba(63, 185, 80, 0.08);
+            border-color: var(--success);
+        }
+
+        .callout-purple {
+            background: rgba(163, 113, 247, 0.08);
+            border-color: var(--accent-purple);
+        }
+
+        .callout strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .callout p {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        li {
+            color: var(--text-secondary);
+            margin: 10px 0;
+            line-height: 1.7;
+        }
+
+        li strong {
+            color: var(--text-primary);
+        }
+
+        /* Blockquote */
+        blockquote {
+            border-left: 3px solid var(--accent-purple);
+            padding: 12px 20px;
+            margin: 24px 0;
+            background: rgba(163, 113, 247, 0.05);
+            border-radius: 0 8px 8px 0;
+        }
+
+        blockquote p {
+            color: var(--text-secondary);
+            font-style: italic;
+            margin: 0;
+        }
+
+        /* Horizontal rule */
+        hr {
+            border: none;
+            height: 1px;
+            background: var(--border);
+            margin: 48px 0;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin: 32px 0;
+        }
+
+        .toc h3 {
+            margin: 0 0 16px;
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .toc ol {
+            padding-left: 20px;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .toc a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* File tree */
+        .tree {
+            font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            line-height: 1.8;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .tree .folder { color: var(--accent); }
+        .tree .file { color: var(--text-primary); }
+        .tree .comment { color: var(--text-muted); }
+
+        /* Tags/Labels */
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(88, 166, 255, 0.15);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 500;
+            margin-right: 6px;
+        }
+
+        .tag-green {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--success);
+        }
+
+        .tag-purple {
+            background: rgba(163, 113, 247, 0.15);
+            color: var(--accent-purple);
+        }
+
+        .tag-orange {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--accent-orange);
+        }
+
+        /* Footer */
+        footer {
+            padding: 48px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav ul { display: none; }
+            .hero h2 { font-size: 2rem; }
+            .hero .subtitle { font-size: 1rem; }
+            article h2 { font-size: 1.5rem; }
+            .container { padding: 0 16px; }
+            .card-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Smooth anchor offset */
+        section[id] {
+            scroll-margin-top: 80px;
+        }
+
+        /* Diagram Overlay / Lightbox */
+        .diagram-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            background: rgba(1, 4, 9, 0.92);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+            cursor: zoom-out;
+        }
+
+        .diagram-overlay.active {
+            display: flex;
+        }
+
+        .diagram-overlay-content {
+            position: relative;
+            width: 96vw;
+            height: 88vh;
+            overflow: auto;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            cursor: default;
+        }
+
+        .diagram-overlay-content svg {
+            width: auto;
+            height: auto;
+            min-width: 100%;
+        }
+
+        .diagram-overlay-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .diagram-overlay-toolbar button {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diagram-overlay-toolbar button:hover {
+            background: var(--border);
+            border-color: var(--border-light);
+        }
+
+        .diagram-overlay-toolbar .zoom-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .diagram-overlay-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+
+        .diagram-overlay-close:hover {
+            background: var(--error);
+            border-color: var(--error);
+        }
+
+        .diagram-overlay-hint {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        /* Expand button on diagrams */
+        .mermaid {
+            position: relative;
+        }
+
+        .diagram-expand-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s, opacity 0.2s;
+            opacity: 0;
+            z-index: 5;
+        }
+
+        .mermaid:hover .diagram-expand-btn {
+            opacity: 1;
+        }
+
+        .diagram-expand-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#238636',
+                primaryTextColor: '#e6edf3',
+                primaryBorderColor: '#30363d',
+                lineColor: '#58a6ff',
+                secondaryColor: '#161b22',
+                tertiaryColor: '#21262d',
+                background: '#0d1117',
+                mainBkg: '#161b22',
+                secondBkg: '#21262d',
+                nodeBorder: '#30363d',
+                clusterBkg: '#161b22',
+                clusterBorder: '#30363d',
+                titleColor: '#e6edf3',
+                edgeLabelBackground: '#161b22',
+                nodeTextColor: '#e6edf3',
+                actorTextColor: '#e6edf3',
+                actorBkg: '#161b22',
+                actorBorder: '#30363d',
+                actorLineColor: '#58a6ff',
+                signalColor: '#58a6ff',
+                signalTextColor: '#e6edf3',
+                labelBoxBkgColor: '#161b22',
+                labelBoxBorderColor: '#30363d',
+                labelTextColor: '#e6edf3',
+                loopTextColor: '#8b949e',
+                noteBkgColor: '#21262d',
+                noteBorderColor: '#30363d',
+                noteTextColor: '#e6edf3',
+                sequenceNumberColor: '#0d1117',
+            },
+            flowchart: {
+                curve: 'basis',
+                padding: 20,
+            },
+            sequence: {
+                mirrorActors: false,
+            },
+            securityLevel: 'loose',
+        });
+    </script>
+
+    <nav>
+        <div class="container">
+            <h1><span class="icon">🔐</span> Nitro Enclaves Attestation</h1>
+            <ul>
+                <li><a href="#intro">Intro</a></li>
+                <li><a href="#enclaves">Enclaves</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#attestation-flow">Attestation</a></li>
+                <li><a href="#hpke">HPKE</a></li>
+                <li><a href="#cicd">CI/CD</a></li>
+                <li><a href="#cdk">CDK</a></li>
+                <li><a href="#deploy">Deploy</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <h2>Binding a Web App to an Attested Nitro Enclave with HPKE</h2>
+            <p class="subtitle">A deep dive into cryptographic attestation, HPKE encryption, and fully-automated infrastructure — from browser to hardware root of trust.</p>
+            <p class="meta">Architecture Guide • Last Updated August 2026</p>
+            <div class="badge-row">
+                <span class="badge">AWS Nitro Enclaves</span>
+                <span class="badge">React + Vite</span>
+                <span class="badge">Python FastAPI</span>
+                <span class="badge">AWS CDK</span>
+                <span class="badge">HPKE (RFC 9180)</span>
+                <span class="badge">CodePipeline</span>
+            </div>
+        </div>
+    </header>
+
+    <article>
+        <div class="container">
+
+            <!-- Table of Contents -->
+            <div class="toc">
+                <h3>Table of Contents</h3>
+                <ol>
+                    <li><a href="#intro">Introduction — What We Built</a></li>
+                    <li><a href="#enclaves">What Are AWS Nitro Enclaves?</a></li>
+                    <li><a href="#architecture">System Architecture</a></li>
+                    <li><a href="#attestation-flow">The Attestation Flow</a></li>
+                    <li><a href="#hpke">HPKE — End-to-End Encryption with the Enclave</a></li>
+                    <li><a href="#trust">Security Model & Trust Boundaries</a></li>
+                    <li><a href="#cicd">CI/CD Pipeline</a></li>
+                    <li><a href="#cdk">Infrastructure as Code (CDK)</a></li>
+                    <li><a href="#api">API Reference</a></li>
+                    <li><a href="#deploy">Deployment Guide</a></li>
+                </ol>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: Introduction -->
+            <!-- ============================================================ -->
+            <section id="intro">
+                <h2>Introduction — What We Built</h2>
+
+                <p class="lead">This project is a <strong>design pattern</strong> demonstrating how to verify the identity of an AWS Nitro Enclave from a web browser and establish an end-to-end encrypted channel — all without trusting any intermediary server.</p>
+
+                <p>The application walks users through a 3-step interactive wizard:</p>
+
+                <div class="mermaid">
+flowchart LR
+    A["🎯 Step 1<br/>Generate Attestation"] --> B["✅ Step 2<br/>Client-Side Verification"]
+    B --> C["🔐 Step 3<br/>HPKE Encrypted Message"]
+    
+    style A fill:#238636,stroke:#30363d,color:#fff
+    style B fill:#1f6feb,stroke:#30363d,color:#fff
+    style C fill:#8957e5,stroke:#30363d,color:#fff
+                </div>
+                <p class="diagram-caption">The 3-step wizard flow: attest → verify → encrypt</p>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🔒 Generate Attestation</h3>
+                        <p>Request a cryptographic attestation document from the Nitro Enclave, with an optional nonce for freshness protection.</p>
+                    </div>
+                    <div class="card">
+                        <h3>✅ Browser Verification</h3>
+                        <p>Verify the COSE signature, certificate chain to AWS root CA, PCR values, and extract the enclave's public key — entirely client-side.</p>
+                    </div>
+                    <div class="card">
+                        <h3>🔐 HPKE Secure Message</h3>
+                        <p>Encrypt a message with HPKE (RFC 9180) using the verified public key. Only the enclave can decrypt it. Receive an encrypted response back.</p>
+                    </div>
+                    <div class="card">
+                        <h3>🏗️ Fully Automated Infra</h3>
+                        <p>One CDK deploy creates everything: VPC, EC2, API Gateway, Cognito, CodePipeline, Amplify. Push code and it flows to production.</p>
+                    </div>
+                </div>
+
+                <div class="callout callout-info">
+                    <strong>💡 Key Insight</strong>
+                    <p>On the parent instance there is <strong>no application backend</strong> — only a thin <em>TCP-to-vsock proxy</em> that forwards bytes to the enclave and <strong>cannot decrypt them</strong> (it does not hold the enclave's private key). Trust is established directly between the browser and the hardware-attested enclave.</p>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: What Are Nitro Enclaves? -->
+            <!-- ============================================================ -->
+            <section id="enclaves">
+                <h2>What Are AWS Nitro Enclaves?</h2>
+
+                <p class="lead">Nitro Enclaves are isolated compute environments that run on a parent EC2 instance. They have <strong>no network, no storage, and no human access</strong> — making them ideal for processing highly sensitive data.</p>
+
+                <div class="callout callout-info">
+                    <strong>Runs on AWS Graviton</strong>
+                    <p>AWS Nitro Enclaves is processor agnostic and is supported on most Intel, AMD, and AWS Graviton-based Amazon EC2 instance types built on the AWS Nitro System. This solution runs on AWS Graviton (<code>c8g.large</code>). Because Graviton has no simultaneous multithreading (1 vCPU = 1 physical core), the enclave is allocated a single vCPU and 2&nbsp;GiB, leaving 1 vCPU and ~2&nbsp;GiB for the parent instance.</p>
+                </div>
+
+                <div class="mermaid">
+flowchart TB
+    subgraph EC2["💻 EC2 Instance (Parent)"]
+        direction TB
+        App["Application Code"]
+        Proxy["vsock Proxy"]
+    end
+    
+    subgraph Enclave["🛡️ Nitro Enclave"]
+        direction TB
+        EnclaveApp["Enclave Application"]
+        NSM["NSM Device<br/>(signed attestation)"]
+        Keys["Private Keys<br/>(memory only)"]
+    end
+    
+    Internet["🌐 Internet"] -.->|"❌ No Direct Access"| Enclave
+    SSH["🔑 SSH/Console"] -.->|"❌ Blocked"| Enclave
+    Storage["💾 Disk"] -.->|"❌ No Persistence"| Enclave
+    
+    App <-->|"vsock (CID 16)"| EnclaveApp
+    
+    style Enclave fill:#0d1117,stroke:#238636,stroke-width:2px,color:#e6edf3
+    style EC2 fill:#161b22,stroke:#30363d,color:#e6edf3
+    style Internet fill:#21262d,stroke:#f85149,color:#e6edf3
+    style SSH fill:#21262d,stroke:#f85149,color:#e6edf3
+    style Storage fill:#21262d,stroke:#f85149,color:#e6edf3
+                </div>
+                <p class="diagram-caption">Enclaves communicate ONLY via vsock — no network, no storage, no shell access</p>
+
+                <h3>The Attestation Document</h3>
+
+                <p>The enclave's central security capability is <strong>cryptographic attestation</strong>. The AWS Nitro System produces a signed attestation document that proves which code is running, records when the document was generated, and binds a public key to the measured enclave:</p>
+
+                <div class="mermaid">
+flowchart LR
+    subgraph AttDoc["📜 Attestation Document (COSE_Sign1)"]
+        direction TB
+        ModuleID["module_id"]
+        Timestamp["timestamp"]
+        PCRs["PCRs (0-31)<br/>Code measurements"]
+        PubKey["public_key (P-256)<br/>For HPKE encryption"]
+        Cert["certificate + CA bundle"]
+        Nonce["nonce (replay protection)"]
+    end
+    
+    NSM["🔐 NSM Hardware"] -->|"Signs with P-384"| AttDoc
+    RootCA["☁️ AWS Nitro Root CA"] -->|"Issues cert chain"| Cert
+    
+    style AttDoc fill:#161b22,stroke:#58a6ff,color:#e6edf3
+    style NSM fill:#238636,stroke:#30363d,color:#fff
+    style RootCA fill:#8957e5,stroke:#30363d,color:#fff
+                </div>
+                <p class="diagram-caption">The attestation document is hardware-signed and contains everything needed for verification</p>
+
+                <h3>PCR Values — Measuring Enclave Identity</h3>
+
+                <p>Platform Configuration Registers (PCRs) are SHA-384 hashes that measure different aspects of the enclave. Any change to the enclave's code produces different hashes — this is how you know <em>exactly</em> what's running inside:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>PCR</th>
+                                <th>What It Measures</th>
+                                <th>Changes When…</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>PCR0</code></td>
+                                <td>Enclave Image File (EIF)</td>
+                                <td>Any file in the enclave Docker image changes</td>
+                            </tr>
+                            <tr>
+                                <td><code>PCR1</code></td>
+                                <td>Linux kernel + bootstrap</td>
+                                <td>Kernel or init process is updated</td>
+                            </tr>
+                            <tr>
+                                <td><code>PCR2</code></td>
+                                <td>Application code</td>
+                                <td>Your Python/application code changes</td>
+                            </tr>
+                            <tr>
+                                <td><code>PCR3</code></td>
+                                <td>IAM role of parent instance</td>
+                                <td>EC2 instance role assignment changes</td>
+                            </tr>
+                            <tr>
+                                <td><code>PCR4</code></td>
+                                <td>Instance ID</td>
+                                <td>Running on a different EC2 instance</td>
+                            </tr>
+                            <tr>
+                                <td><code>PCR8</code></td>
+                                <td>Signing certificate</td>
+                                <td>EIF is signed with a different key</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-success">
+                    <strong>🔒 Security Guarantee</strong>
+                    <p>By pinning expected PCR values, you can cryptographically verify that the enclave is running exactly the code you expect. If an attacker modifies anything, the PCRs won't match.</p>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: Architecture -->
+            <!-- ============================================================ -->
+            <section id="architecture">
+                <h2>System Architecture</h2>
+
+                <p class="lead">The architecture uses a <strong>fully private VPC</strong> with no public subnets and no NAT Gateway. All AWS service access goes through VPC Endpoints. The frontend is served by Amplify, with API Gateway providing the authenticated bridge to the enclave (via the inbound proxy).</p>
+
+                <div class="mermaid">
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+flowchart TB
+    subgraph Internet["🌐 Internet"]
+        User["👤 User Browser"]
+    end
+
+    subgraph AWS["☁️ AWS Cloud"]
+        subgraph Frontend["Frontend Layer"]
+            Amplify["📱 AWS Amplify<br/>React + Vite"]
+            Cognito["🔐 Amazon Cognito<br/>User Pool + JWT"]
+        end
+
+        APIGW["🚪 API Gateway (HTTP)<br/>JWT Authorizer + VPC Link"]
+
+        subgraph VPC["🔒 VPC — Fully Private (No NAT)"]
+            subgraph Subnets["Private Isolated Subnets (2 AZs)"]
+                NLB["⚖️ Network Load Balancer<br/>(internal)"]
+                
+                subgraph ASG["Auto Scaling Group"]
+                    subgraph EC2["💻 EC2 c8g.large · Graviton"]
+                        TCPProxy["🔌 Enclave inbound proxy<br/>TCP :8000 → vsock CID 16"]
+                        
+                        subgraph EnclaveBox["🛡️ Nitro Enclave"]
+                            NSM["NSM Device"]
+                            KeyGen["P-256 Key Pair"]
+                            HPKE["HPKE Decrypt"]
+                            EnclaveAPI["FastAPI :8000"]
+                        end
+                    end
+                end
+            end
+            
+            subgraph VPCEndpoints["VPC Endpoints"]
+                S3EP["S3 (Gateway)"]
+                SSMEP["SSM + Messages"]
+                STSEP["STS"]
+                CWEP["CloudWatch Logs"]
+                CDEP["CodeDeploy"]
+                ECREP["ECR"]
+            end
+        end
+    end
+
+    User --> Amplify
+    User --> Cognito
+    Amplify --> APIGW
+    Cognito -.->|"JWT validation"| APIGW
+    APIGW --> NLB
+    NLB --> TCPProxy
+    TCPProxy --> EnclaveAPI
+
+    EC2 -.-> S3EP
+    EC2 -.-> SSMEP
+    EC2 -.-> STSEP
+    EC2 -.-> CWEP
+    EC2 -.-> CDEP
+                </div>
+                <p class="diagram-caption">System architecture — from the browser to the hardware-attested enclave. The build and deployment pipeline is covered in the CI/CD Pipeline section.</p>
+
+                <h3>Why This Architecture?</h3>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🔒 Zero Trust Network</h3>
+                        <p>No public subnets means no attack surface. VPC Endpoints provide private paths to AWS services without internet exposure.</p>
+                    </div>
+                    <div class="card">
+                        <h3>🔐 JWT Authentication</h3>
+                        <p>API Gateway validates Cognito JWTs before forwarding requests. Nothing on the parent instance handles authentication logic.</p>
+                    </div>
+                    <div class="card">
+                        <h3>🚀 Automated Deployments</h3>
+                        <p>Push code to S3 → EventBridge triggers CodePipeline → CodeBuild creates EIF → CodeDeploy rolls out to EC2.</p>
+                    </div>
+                </div>
+
+                <h3>Networking Deep Dive</h3>
+
+                <div class="mermaid">
+flowchart LR
+    subgraph External["External"]
+        Browser["Browser"]
+        APIGW["API Gateway"]
+    end
+    
+    subgraph VPC["Private VPC"]
+        VPCLink["VPC Link"]
+        NLB["NLB :80"]
+        EC2["EC2 :8000"]
+        Enclave["Enclave<br/>vsock CID:16"]
+    end
+    
+    Browser -->|"HTTPS"| APIGW
+    APIGW -->|"VPC Link"| VPCLink
+    VPCLink --> NLB
+    NLB -->|"TCP :8000"| EC2
+    EC2 -->|"vsock"| Enclave
+    
+    style VPC fill:#0d1117,stroke:#238636,stroke-width:2px
+    style Enclave fill:#238636,stroke:#30363d,color:#fff
+                </div>
+                <p class="diagram-caption">Request path: Browser → API Gateway → VPC Link → NLB → EC2 → vsock → Enclave</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: Attestation Flow -->
+            <!-- ============================================================ -->
+            <section id="attestation-flow">
+                <h2>The Attestation Flow</h2>
+
+                <p class="lead">Attestation is the process of <strong>proving to a remote party what code is running inside the enclave</strong>. Our implementation performs all verification in the browser — nothing on the server side is trusted with validation decisions.</p>
+
+                <div class="mermaid">
+sequenceDiagram
+    participant User as 👤 User
+    participant Browser as 📱 Browser
+    participant API as 🚪 API Gateway
+    participant Proxy as 🔌 Inbound proxy
+    participant Enclave as 🛡️ Enclave
+    participant NSM as 🔐 NSM
+
+    Note over User,NSM: Step 1 — Generate Attestation Document
+    User->>Browser: Click "Fetch Attestation"
+    Browser->>Browser: Generate random nonce
+    Browser->>API: POST /api/attestation {nonce}
+    API->>API: Validate JWT
+    API->>Proxy: Forward request
+    Proxy->>Enclave: vsock request
+    Enclave->>NSM: get_attestation_document(nonce, public_key)
+    NSM-->>Enclave: COSE_Sign1 signed document
+    Enclave-->>Proxy: Attestation bytes
+    Proxy-->>API: Response
+    API-->>Browser: Base64 CBOR attestation
+
+    Note over User,NSM: Step 2 — Client-Side Verification (NO network call)
+    Browser->>Browser: Decode Base64 → CBOR bytes
+    Browser->>Browser: Parse COSE_Sign1 structure
+    Browser->>Browser: Extract cert chain from payload
+    Browser->>Browser: Verify chain → AWS Nitro Root CA
+    Browser->>Browser: Verify COSE signature (ECDSA P-384)
+    Browser->>Browser: Validate nonce matches
+    Browser->>Browser: Extract P-256 public key
+    Browser-->>User: ✅ Attestation Verified
+
+    Note over User,NSM: Step 3 — HPKE Encrypted Communication
+    User->>Browser: Type secret message
+    Browser->>Browser: HPKE Seal (enclave's verified public key)
+    Browser->>API: POST /api/decrypt/hpke {enc, ciphertext}
+    API->>Proxy: Forward (cannot read payload)
+    Proxy->>Enclave: vsock (still encrypted)
+    Enclave->>Enclave: HPKE Open (private key)
+    Enclave->>Enclave: Process + encrypt response
+    Enclave-->>Proxy: Encrypted response
+    Proxy-->>Browser: Forward encrypted response
+    Browser->>Browser: Decrypt with exported key
+    Browser-->>User: 🔓 Decrypted response
+                </div>
+                <p class="diagram-caption">Complete 3-step flow: attestation generation → client-side verification → encrypted communication</p>
+
+                <h3>Verification Steps (All Client-Side)</h3>
+
+                <p>The browser performs these steps without any server round-trip:</p>
+
+                <div class="mermaid">
+flowchart TD
+    A["📦 Base64 Decode"] --> B["📋 CBOR Parse"]
+    B --> C["🔍 COSE_Sign1 Extract"]
+    C --> D["📜 Certificate Chain Extraction"]
+    D --> E["🔗 Chain Validation"]
+    E --> F["✍️ COSE Signature Verify"]
+    F --> G["🎲 Nonce Validation"]
+    G --> H["🔑 Public Key Extraction"]
+    
+    E --> E1["Root CA → AWS Nitro"]
+    E --> E2["Intermediate CAs"]
+    E --> E3["Leaf Certificate"]
+    
+    style A fill:#21262d,stroke:#58a6ff,color:#e6edf3
+    style B fill:#21262d,stroke:#58a6ff,color:#e6edf3
+    style C fill:#21262d,stroke:#58a6ff,color:#e6edf3
+    style D fill:#21262d,stroke:#58a6ff,color:#e6edf3
+    style E fill:#21262d,stroke:#a371f7,color:#e6edf3
+    style F fill:#21262d,stroke:#a371f7,color:#e6edf3
+    style G fill:#21262d,stroke:#238636,color:#e6edf3
+    style H fill:#238636,stroke:#30363d,color:#fff
+                </div>
+                <p class="diagram-caption">Client-side verification pipeline — no network calls, pure cryptographic math</p>
+
+                <h3>Certificate Chain</h3>
+
+                <p>The attestation's trust anchors to AWS Nitro through a certificate chain:</p>
+
+                <div class="mermaid">
+flowchart TD
+    Root["🏛️ AWS Nitro Root CA<br/><small>Self-signed, EC P-384</small><br/><small>CN=aws.nitro-enclaves</small>"] --> Inter["🔗 Intermediate CA(s)<br/><small>Regional / temporal</small><br/><small>EC P-384</small>"]
+    Inter --> Leaf["🔏 Signing Certificate<br/><small>Unique per enclave instance</small><br/><small>EC P-384</small>"]
+    Leaf --> Sig["✍️ COSE_Sign1 Signature<br/><small>Signs the attestation payload</small>"]
+    
+    Root -.->|"Pinned in client"| Browser["📱 Browser"]
+    
+    style Root fill:#8957e5,stroke:#30363d,color:#fff
+    style Inter fill:#1f6feb,stroke:#30363d,color:#fff
+    style Leaf fill:#238636,stroke:#30363d,color:#fff
+    style Sig fill:#21262d,stroke:#58a6ff,color:#e6edf3
+    style Browser fill:#21262d,stroke:#30363d,color:#e6edf3
+                </div>
+                <p class="diagram-caption">Trust chain: AWS Nitro Root CA → Intermediates → Leaf → Attestation Signature</p>
+
+                <div class="callout callout-info">
+                    <strong>Why the root certificate is pinned in the app</strong>
+                    <p>The browser verifier ships with the AWS Nitro Enclaves root certificate <strong>pinned</strong> in the client, rather than fetching it at runtime. AWS publishes the root as a zip at <code>https://aws-nitro-enclaves.amazonaws.com/AWS_NitroEnclaves_Root-G1.zip</code> (S3 behind CloudFront), but that endpoint sends no <code>Access-Control-Allow-Origin</code> header, so a browser <strong>cannot fetch it cross-origin</strong> — and because it is AWS-owned, we cannot add CORS to it. Since the root is a long-lived trust anchor (<strong>valid for 30 years</strong>), pinning it in the app is both practical and the stronger posture: a pinned root cannot be substituted by a compromised network path or backend, which is the whole point of verifying client-side. To confirm or rotate it, download the zip and verify its SHA-256 fingerprint against the value AWS publishes.</p>
+                    <p>References:
+                        <a href="https://aws-nitro-enclaves.amazonaws.com/AWS_NitroEnclaves_Root-G1.zip">AWS Nitro Enclaves Root-G1 (zip)</a>
+                        &nbsp;·&nbsp;
+                        <a href="https://docs.aws.amazon.com/enclaves/latest/user/verify-root.html">Verifying the root of trust (AWS docs)</a>
+                    </p>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: HPKE -->
+            <!-- ============================================================ -->
+            <section id="hpke">
+                <h2>HPKE — End-to-End Encryption with the Enclave</h2>
+
+                <p class="lead">We use <strong>Hybrid Public Key Encryption (HPKE, RFC 9180)</strong> to establish a secure channel directly between the browser and the enclave. The parent's TCP-to-vsock proxy relays encrypted payloads but <strong>cannot decrypt them</strong>.</p>
+
+                <blockquote>
+                    <p>The shared secret is never transmitted — both parties independently derive it from the Diffie-Hellman exchange. An eavesdropper sees public keys but cannot compute the secret without the private keys.</p>
+                </blockquote>
+
+                <h3>HPKE Suite</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Algorithm</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>KEM</code></td>
+                                <td>DHKEM(P-256, HKDF-SHA256)</td>
+                                <td>Key Encapsulation — ECDH on P-256 curve</td>
+                            </tr>
+                            <tr>
+                                <td><code>KDF</code></td>
+                                <td>HKDF-SHA256</td>
+                                <td>Key Derivation with labeled domain separation</td>
+                            </tr>
+                            <tr>
+                                <td><code>AEAD</code></td>
+                                <td>AES-128-GCM</td>
+                                <td>Authenticated encryption of payloads</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>How HPKE Works — The Encryption Dance</h3>
+
+                <div class="mermaid">
+sequenceDiagram
+    participant Client as 📱 Browser
+    participant Proxy as 🔌 Inbound proxy
+    participant Enclave as 🛡️ Enclave
+
+    Note over Client: Has verified enclave public key Q from attestation
+
+    rect rgba(35, 134, 54, 0.1)
+    Note over Client: HPKE Seal (Encrypt)
+    Client->>Client: Generate ephemeral key pair (e, E=eG)
+    Client->>Client: shared_secret = ECDH(e, Q) = e×Q
+    Client->>Client: request_key = HKDF(shared_secret, "nitro-enclave-request")
+    Client->>Client: ciphertext = AES-GCM(request_key, plaintext)
+    Client->>Client: response_key = HKDF(shared_secret, "nitro-enclave-response")
+    end
+
+    Client->>Proxy: {enc: E, ciphertext, hpke_suite}
+    Note over Proxy: Cannot decrypt — has no private key
+    Proxy->>Enclave: Forward as-is via vsock
+
+    rect rgba(88, 166, 255, 0.1)
+    Note over Enclave: HPKE Open (Decrypt)
+    Enclave->>Enclave: shared_secret = ECDH(q, E) = q×E
+    Note over Enclave: q×E = q×(eG) = e×(qG) = e×Q ✓
+    Enclave->>Enclave: request_key = HKDF(shared_secret, "nitro-enclave-request")
+    Enclave->>Enclave: plaintext = AES-GCM.decrypt(request_key, ciphertext)
+    end
+
+    rect rgba(163, 113, 247, 0.1)
+    Note over Enclave: Encrypt Response
+    Enclave->>Enclave: response_key = HKDF(shared_secret, "nitro-enclave-response")
+    Enclave->>Enclave: encrypted_response = AES-GCM(response_key, reply)
+    end
+
+    Enclave-->>Proxy: {encrypted_response, response_iv}
+    Proxy-->>Client: Forward as-is
+    Client->>Client: Decrypt with response_key
+                </div>
+                <p class="diagram-caption">HPKE encryption: ephemeral ECDH → shared secret → labeled key derivation → AES-GCM</p>
+
+                <h3>Why the Attestation Public Key Matters</h3>
+
+                <p>The critical insight is that the enclave's public key is <strong>cryptographically bound</strong> to the attestation document. The NSM hardware signs the attestation (including the public key) with a certificate chain rooting to AWS. This means:</p>
+
+                <div class="mermaid">
+flowchart LR
+    subgraph Attestation["📜 Attestation Document"]
+        PK["🔑 public_key<br/>(P-256)"]
+        PCR["📊 PCRs<br/>(code hash)"]
+        SIG["✍️ COSE Signature<br/>(P-384)"]
+    end
+    
+    NSM["🔐 NSM Hardware"] -->|"Signs"| SIG
+    SIG -->|"Proves ownership"| PK
+    PCR -->|"Proves code identity"| Trust["✅ Trust Decision"]
+    PK -->|"Enables"| HPKE["🔒 HPKE Encryption"]
+    
+    style PK fill:#238636,stroke:#30363d,color:#fff
+    style HPKE fill:#1f6feb,stroke:#30363d,color:#fff
+    style NSM fill:#8957e5,stroke:#30363d,color:#fff
+    style Trust fill:#238636,stroke:#30363d,color:#fff
+                </div>
+                <p class="diagram-caption">The attestation signature cryptographically binds the public key to the enclave's identity</p>
+
+                <h3>HPKE Request Payload</h3>
+
+                <div class="code-header">
+                    <span>JSON</span>
+                    <span>POST /api/decrypt/hpke</span>
+                </div>
+                <pre><code>{
+  "enc": "04a1b2c3...65bytes",
+  "ciphertext": "693dd586...hex",
+  "hpke_suite": "DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, AES-128-GCM"
+}</code></pre>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>What It Is</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>enc</code></td>
+                                <td>Ephemeral P-256 public key (65 bytes, uncompressed)</td>
+                                <td>Lets enclave derive same shared secret via ECDH</td>
+                            </tr>
+                            <tr>
+                                <td><code>ciphertext</code></td>
+                                <td>AES-128-GCM encrypted message + 16-byte auth tag</td>
+                                <td>The actual encrypted data</td>
+                            </tr>
+                            <tr>
+                                <td><code>hpke_suite</code></td>
+                                <td>Algorithm identifiers</td>
+                                <td>Tells recipient which HPKE algorithms to use</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-warning">
+                    <strong>⚠️ Security Note</strong>
+                    <p>Always obtain the enclave's public key from a <em>verified</em> attestation document. Never trust an unauthenticated endpoint for the key — the attestation signature chain proves the key belongs to the authentic enclave.</p>
+                </div>
+
+                <h3>Why HPKE Instead of KMS?</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>HPKE (This Project)</th>
+                                <th>Envelope Encryption (KMS)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>External dependency</td>
+                                <td><span class="tag tag-green">None</span> Only needs recipient's public key</td>
+                                <td><span class="tag tag-orange">KMS API call</span> required</td>
+                            </tr>
+                            <tr>
+                                <td>Enclave network</td>
+                                <td><span class="tag tag-green">Not needed</span> Math-only decryption</td>
+                                <td><span class="tag tag-orange">Required</span> for KMS calls</td>
+                            </tr>
+                            <tr>
+                                <td>Forward secrecy</td>
+                                <td><span class="tag tag-green">Yes</span> Fresh ephemeral key per message</td>
+                                <td><span class="tag tag-orange">No</span> Same data key if cached</td>
+                            </tr>
+                            <tr>
+                                <td>Attestation binding</td>
+                                <td><span class="tag tag-green">Native</span> Key in attestation doc</td>
+                                <td><span class="tag tag-orange">Separate</span> KMS key policy</td>
+                            </tr>
+                            <tr>
+                                <td>Standards</td>
+                                <td><span class="tag tag-green">RFC 9180</span> Formal proofs</td>
+                                <td><span class="tag">Proprietary</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: Security Model -->
+            <!-- ============================================================ -->
+            <section id="trust">
+                <h2>Security Model & Trust Boundaries</h2>
+
+                <p class="lead">The system is designed with a clear separation of trust. The enclave is the only trusted compute environment — everything else is treated as potentially compromised.</p>
+
+                <div class="mermaid">
+flowchart TB
+    subgraph Untrusted["⚠️ Untrusted Zone"]
+        Browser["📱 Browser<br/><small>Performs verification</small>"]
+        Internet["🌐 Internet"]
+    end
+    
+    subgraph Auth["🔐 Authentication Boundary"]
+        APIGW["API Gateway<br/><small>JWT validation</small>"]
+        Cognito["Cognito<br/><small>Token issuer</small>"]
+    end
+    
+    subgraph SemiTrusted["📦 Semi-Trusted (Proxy Only)"]
+        Proxy["Enclave inbound proxy<br/><small>Cannot read HPKE payloads</small>"]
+    end
+    
+    subgraph Trusted["🛡️ Trusted Execution Environment"]
+        Enclave["Nitro Enclave<br/><small>Key generation, decryption</small>"]
+        NSM["NSM Device<br/><small>Signed attestation</small>"]
+    end
+    
+    Browser --> Internet
+    Internet --> APIGW
+    Cognito -.-> APIGW
+    APIGW --> Proxy
+    Proxy -->|"Encrypted payloads"| Enclave
+    Enclave --> NSM
+    
+    style Untrusted fill:#1c1917,stroke:#f85149,color:#e6edf3
+    style Auth fill:#1c1917,stroke:#d29922,color:#e6edf3
+    style SemiTrusted fill:#1c1917,stroke:#58a6ff,color:#e6edf3
+    style Trusted fill:#0d1117,stroke:#238636,stroke-width:3px,color:#e6edf3
+                </div>
+                <p class="diagram-caption">Trust boundaries — only the enclave and NSM hardware are fully trusted</p>
+
+                <h3>Security Properties</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>How It's Achieved</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>End-to-end encryption</strong></td>
+                                <td>The parent proxy forwards HPKE ciphertext it cannot decrypt</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Client-side verification</strong></td>
+                                <td>No trust placed on the parent for attestation validity</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Forward secrecy</strong></td>
+                                <td>Fresh ephemeral ECDH key per message</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Replay protection</strong></td>
+                                <td>Client-generated nonce validated in attestation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Hardware key isolation</strong></td>
+                                <td>P-256 private key exists only in enclave memory</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Code integrity</strong></td>
+                                <td>PCR values prove exact enclave contents</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Network isolation</strong></td>
+                                <td>EC2 in private isolated subnet, VPC endpoints only</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-warning">
+                    <strong>⚠️ Defense in depth: the last network hop is HTTP</strong>
+                    <p>In this sample, the leg from API Gateway through the VPC Link and internal Network Load Balancer to the inbound proxy on the EC2 instance (port 8000) is <strong>plain HTTP</strong>. It stays within a private, isolated VPC (no internet or NAT gateway), and the sensitive payload is already sealed to the enclave with HPKE — so only HPKE ciphertext and the public attestation document cross this hop. This is a deliberate simplification of the sample. Some threat models legitimately require transport encryption on <em>every</em> hop, so treat this as a real assumption to evaluate for your environment, not something to dismiss.</p>
+                    <p><strong>Recommended mitigation:</strong> terminate TLS on the instance (ideally inside the enclave) with a certificate <strong>issued by a public (trusted) certificate authority</strong> for a hostname you control, keep the NLB as a TCP <code>:443</code> passthrough, and set <code>TlsConfig.serverNameToVerify</code> on the API Gateway integration. A publicly issued certificate is required because API Gateway HTTP APIs (v2) always validate the backend certificate against trusted CAs (their <code>TlsConfig</code> has no verification-skip option); accepting a self-signed certificate would instead require REST APIs (v1) with <code>insecureSkipVerification</code>.</p>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: CI/CD Pipeline -->
+            <!-- ============================================================ -->
+            <section id="cicd">
+                <h2>CI/CD Pipeline — From Code to Running Enclave</h2>
+
+                <p class="lead">The deployment pipeline is fully automated. Upload source code to S3, and EventBridge triggers CodePipeline which builds the enclave image and deploys it to EC2 — all without manual intervention.</p>
+
+                <div class="mermaid">
+flowchart LR
+    subgraph Developer["👨‍💻 Developer"]
+        Code["Source Code"]
+        Script["./scripts/<br/>package-and-upload.sh"]
+    end
+
+    subgraph S3Bucket["📦 S3 Bucket"]
+        Source["source/source.zip"]
+        EIF["enclave/*.eif"]
+        AppCode["proxy + systemd + scripts"]
+    end
+
+    subgraph Trigger["⚡ EventBridge"]
+        Event["Object Created<br/>source/source.zip"]
+    end
+
+    subgraph Pipeline["🔄 CodePipeline"]
+        direction TB
+        SourceStage["📥 Source Stage<br/><small>Pull from S3</small>"]
+        BuildStage["🔨 Build Stage<br/><small>CodeBuild</small>"]
+        DeployStage["🚀 Deploy Stage<br/><small>CodeDeploy</small>"]
+        SourceStage --> BuildStage --> DeployStage
+    end
+
+    subgraph CodeBuild["🔨 CodeBuild"]
+        Docker["Docker build"]
+        NitroCLI["nitro-cli<br/>build-enclave"]
+        Upload["Upload artifacts"]
+        Docker --> NitroCLI --> Upload
+    end
+
+    subgraph EC2Target["💻 EC2 (CodeDeploy)"]
+        Stop["Stop services"]
+        Download["Download EIF + app"]
+        Configure["Configure allocator"]
+        Launch["Launch enclave"]
+        Start["Start services"]
+        Stop --> Download --> Configure --> Launch --> Start
+    end
+
+    Code --> Script
+    Script -->|"zip + upload"| Source
+    Source --> Event
+    Event --> SourceStage
+    BuildStage -.-> CodeBuild
+    CodeBuild -.-> EIF
+    CodeBuild -.-> AppCode
+    DeployStage -.-> EC2Target
+                </div>
+                <p class="diagram-caption">Full CI/CD pipeline: code upload → EventBridge → CodePipeline → CodeBuild → CodeDeploy → Running enclave</p>
+
+                <h3>Pipeline Stages</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Stage</th>
+                                <th>Duration</th>
+                                <th>What Happens</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="tag">Source</span></td>
+                                <td>~1 min</td>
+                                <td>Pull source.zip from S3, triggered by EventBridge</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-orange">Build</span></td>
+                                <td>~10-15 min</td>
+                                <td>Docker image build + <code>nitro-cli build-enclave</code> → produces .eif</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-green">Deploy</span></td>
+                                <td>~3-5 min</td>
+                                <td>CodeDeploy: stop services → download artifacts → launch enclave → start services</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>CodeDeploy Lifecycle</h3>
+
+                <div class="mermaid">
+flowchart TD
+    subgraph AppSpec["📋 appspec.yml"]
+        BI["BeforeInstall<br/><small>Stop old enclave & services</small>"]
+        AI["AfterInstall<br/><small>Download EIF from S3<br/>Configure memory/CPU</small>"]
+        AS["ApplicationStart<br/><small>Launch enclave<br/>Start inbound proxy</small>"]
+        VS["ValidateService<br/><small>Health check /health</small>"]
+        
+        BI --> AI --> AS --> VS
+    end
+    
+    style BI fill:#f85149,stroke:#30363d,color:#fff
+    style AI fill:#d29922,stroke:#30363d,color:#fff
+    style AS fill:#238636,stroke:#30363d,color:#fff
+    style VS fill:#1f6feb,stroke:#30363d,color:#fff
+                </div>
+                <p class="diagram-caption">CodeDeploy lifecycle hooks ensure zero-downtime deployments</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: CDK Infrastructure -->
+            <!-- ============================================================ -->
+            <section id="cdk">
+                <h2>Infrastructure as Code (CDK)</h2>
+
+                <p class="lead">The entire infrastructure is defined in modular AWS CDK constructs. Each construct encapsulates a logical component — networking, compute, auth, storage, build, deploy, and frontend.</p>
+
+                <div class="mermaid">
+flowchart TB
+    subgraph CDK["🏗️ CDK Application"]
+        Entry["bin/cdk.ts<br/><small>Entry point</small>"]
+        
+        subgraph Stacks["Deployment Options"]
+            MainStack["NitroAttestationStack<br/><small>Everything combined</small>"]
+            BackendStack["BackendStack<br/><small>VPC + EC2 + Auth + API</small>"]
+            FrontendStack["FrontendStack<br/><small>Amplify only</small>"]
+        end
+        
+        subgraph Constructs["Reusable Constructs"]
+            Net["🌐 Networking<br/><small>VPC, NLB, API GW,<br/>VPC Endpoints, JWT Auth</small>"]
+            Store["📦 Storage<br/><small>S3, SSM Params</small>"]
+            AuthC["🔐 Auth<br/><small>Cognito User Pool</small>"]
+            Comp["💻 Compute<br/><small>ASG, EC2, User Data</small>"]
+            Build["🔨 CodeBuild<br/><small>Docker + nitro-cli</small>"]
+            Deploy["🚀 CodeDeploy<br/><small>Server Deployment</small>"]
+            Pipe["🔄 Pipeline<br/><small>CodePipeline + EventBridge</small>"]
+            Front["📱 Frontend<br/><small>Amplify Hosting</small>"]
+        end
+    end
+    
+    Entry --> MainStack
+    Entry --> BackendStack
+    Entry --> FrontendStack
+    
+    MainStack --> Net
+    MainStack --> Store
+    MainStack --> AuthC
+    MainStack --> Comp
+    MainStack --> Build
+    MainStack --> Deploy
+    MainStack --> Pipe
+    MainStack --> Front
+                </div>
+                <p class="diagram-caption">Modular CDK architecture — each construct is independently testable and reusable</p>
+
+                <h3>CDK File Layout</h3>
+
+                <div class="tree">
+<span class="folder">cdk/</span>
+├── <span class="file">bin/cdk.ts</span>              <span class="comment"># App entry — instantiates stacks</span>
+├── <span class="folder">lib/</span>
+│   ├── <span class="file">main-stack.ts</span>      <span class="comment"># Combined stack (everything)</span>
+│   ├── <span class="file">backend-stack.ts</span>   <span class="comment"># Backend infrastructure only</span>
+│   ├── <span class="file">frontend-stack.ts</span>  <span class="comment"># Frontend (Amplify) only</span>
+│   └── <span class="folder">constructs/</span>
+│       ├── <span class="file">networking.ts</span>  <span class="comment"># VPC, VPC Endpoints, NLB, API GW, JWT Auth</span>
+│       ├── <span class="file">storage.ts</span>     <span class="comment"># S3 bucket, SSM parameters</span>
+│       ├── <span class="file">auth.ts</span>        <span class="comment"># Cognito User Pool + Client</span>
+│       ├── <span class="file">compute.ts</span>     <span class="comment"># ASG, LaunchTemplate, User Data</span>
+│       ├── <span class="file">codebuild.ts</span>   <span class="comment"># Docker + nitro-cli EIF builder</span>
+│       ├── <span class="file">codedeploy.ts</span>  <span class="comment"># Server deployment group</span>
+│       ├── <span class="file">pipeline.ts</span>    <span class="comment"># CodePipeline + EventBridge trigger</span>
+│       └── <span class="file">frontend.ts</span>    <span class="comment"># Amplify app hosting</span>
+├── <span class="file">cdk.json</span>               <span class="comment"># CDK configuration</span>
+├── <span class="file">package.json</span>           <span class="comment"># Dependencies</span>
+└── <span class="file">tsconfig.json</span>          <span class="comment"># TypeScript config</span>
+                </div>
+
+                <h3>Stack Comparison</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Stack</th>
+                                <th>Resources Created</th>
+                                <th>Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>NitroAttestationStack</code></td>
+                                <td>VPC, EC2, NLB, API GW, Cognito, S3, CodeBuild, CodeDeploy, CodePipeline, Amplify</td>
+                                <td>Quick single-command deployment</td>
+                            </tr>
+                            <tr>
+                                <td><code>NitroAttestationBackend</code></td>
+                                <td>VPC, EC2, NLB, API GW, Cognito, S3, CodeBuild</td>
+                                <td>Backend development & testing</td>
+                            </tr>
+                            <tr>
+                                <td><code>NitroAttestationFrontend</code></td>
+                                <td>Amplify Hosting (references backend outputs)</td>
+                                <td>Iterating on frontend only</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>VPC Endpoints</h3>
+
+                <p>Since the VPC has <strong>no internet access</strong>, VPC Endpoints provide private connectivity to AWS services:</p>
+
+                <div class="mermaid">
+flowchart LR
+    subgraph VPC["Private VPC"]
+        EC2["EC2 Instance"]
+    end
+    
+    subgraph Endpoints["VPC Endpoints"]
+        S3["S3<br/>(Gateway, free)"]
+        SSM["SSM + Messages"]
+        EC2M["EC2 Messages"]
+        STS["STS"]
+        CW["CloudWatch Logs"]
+        CDep["CodeDeploy<br/>+ Commands"]
+        ECR["ECR + Docker"]
+        EC2API["EC2 API"]
+    end
+    
+    EC2 --> S3
+    EC2 --> SSM
+    EC2 --> EC2M
+    EC2 --> STS
+    EC2 --> CW
+    EC2 --> CDep
+    EC2 --> ECR
+    EC2 --> EC2API
+    
+    style VPC fill:#0d1117,stroke:#238636,stroke-width:2px,color:#e6edf3
+    style Endpoints fill:#161b22,stroke:#30363d,color:#e6edf3
+                </div>
+                <p class="diagram-caption">10 VPC Endpoints provide private access to AWS services — no NAT Gateway needed</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: API Reference -->
+            <!-- ============================================================ -->
+            <section id="api">
+                <h2>API Reference</h2>
+
+                <p class="lead">The enclave exposes a minimal API surface. All <code>/api/*</code> routes require a valid Cognito JWT token (validated at API Gateway). The parent instance runs only a TCP-to-vsock proxy that forwards requests to the enclave and cannot decrypt HPKE payloads.</p>
+
+                <div class="mermaid">
+flowchart LR
+    subgraph Routes["🚪 API Gateway Routes"]
+        Health["GET /health<br/><small>No auth</small>"]
+        Attest["POST /api/attestation<br/><small>JWT required</small>"]
+        Decrypt["POST /api/decrypt/hpke<br/><small>JWT required</small>"]
+    end
+
+    subgraph Proxy["🔌 Inbound proxy (parent)"]
+        PFwd["TCP :8000 → vsock<br/><small>forward only, cannot decrypt</small>"]
+    end
+
+    subgraph Enclave["🛡️ Enclave"]
+        EHealth["health check"]
+        EAttest["NSM attestation"]
+        EDecrypt["HPKE decrypt"]
+    end
+
+    Health --> PFwd --> EHealth
+    Attest --> PFwd --> EAttest
+    Decrypt --> PFwd --> EDecrypt
+
+    style Routes fill:#161b22,stroke:#58a6ff,color:#e6edf3
+    style Proxy fill:#161b22,stroke:#d29922,color:#e6edf3
+    style Enclave fill:#161b22,stroke:#238636,color:#e6edf3
+                </div>
+                <p class="diagram-caption">API routes flow through the inbound proxy (forward only) to the enclave</p>
+
+                <h4>POST /api/attestation</h4>
+                <p>Generate an attestation document from the enclave's NSM device.</p>
+
+                <div class="code-header">
+                    <span>Request</span>
+                    <span>application/json</span>
+                </div>
+                <pre><code>{
+  "nonce": "random-client-nonce",
+  "user_data": "optional-application-context"
+}</code></pre>
+
+                <div class="code-header">
+                    <span>Response</span>
+                    <span>200 OK</span>
+                </div>
+                <pre><code>{
+  "status": "success",
+  "attestation_document": "base64-encoded-COSE_Sign1-CBOR",
+  "size_bytes": 4467,
+  "environment": "enclave"
+}</code></pre>
+
+                <h4>POST /api/decrypt/hpke</h4>
+                <p>Send an HPKE-encrypted message to the enclave for decryption.</p>
+
+                <div class="code-header">
+                    <span>Request</span>
+                    <span>application/json</span>
+                </div>
+                <pre><code>{
+  "enc": "04...ephemeral-public-key-hex-65-bytes",
+  "ciphertext": "...aes-gcm-ciphertext-hex",
+  "hpke_suite": "DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, AES-128-GCM"
+}</code></pre>
+
+                <div class="code-header">
+                    <span>Response</span>
+                    <span>200 OK</span>
+                </div>
+                <pre><code>{
+  "status": "success",
+  "response_iv": "26aa10521dc5f1ae10cde1fc",
+  "encrypted_response": "43526e431498d17d2f236e8b0ce95cc9e5ffc65b7d2ea2a3cb9bc5e60285491f2ce712d986ba8f18cd09c9dae3358f",
+  "message_length": 5,
+  "hpke_suite": "DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, AES-128-GCM"
+}</code></pre>
+
+                <h4>GET /health</h4>
+                <p>Health check endpoint (no authentication required).</p>
+
+                <div class="code-header">
+                    <span>Response</span>
+                    <span>200 OK</span>
+                </div>
+                <pre><code>{
+  "status": "healthy",
+  "service": "attestation-api"
+}</code></pre>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: Deployment -->
+            <!-- ============================================================ -->
+            <section id="deploy">
+                <h2>Deployment Guide</h2>
+
+                <p class="lead">Deployment is automated end to end with the AWS Cloud Development Kit (AWS CDK) and AWS CodePipeline: you deploy the stack, upload the source, and the pipeline builds the enclave image and deploys it to the EC2 Auto Scaling group.</p>
+
+                <h3>Production Deployment Flow</h3>
+
+                <div class="mermaid">
+flowchart TD
+    A["1️⃣ Install CDK deps<br/><code>cd cdk && npm install</code>"] --> B["2️⃣ Bootstrap CDK<br/><code>npx cdk bootstrap</code>"]
+    B --> C["3️⃣ Deploy stack<br/><code>npx cdk deploy NitroAttestationStack</code>"]
+    C --> D["4️⃣ Upload source<br/><code>./scripts/package-and-upload.sh</code>"]
+    D --> E["5️⃣ Pipeline runs automatically<br/><small>Source → Build → Deploy</small>"]
+    E --> F["6️⃣ Verify<br/><code>curl $API_ENDPOINT/health</code>"]
+    F --> G["7️⃣ Deploy frontend<br/><code>./scripts/deploy-frontend.sh</code>"]
+    
+    style A fill:#21262d,stroke:#58a6ff,color:#e6edf3
+    style B fill:#21262d,stroke:#58a6ff,color:#e6edf3
+    style C fill:#21262d,stroke:#a371f7,color:#e6edf3
+    style D fill:#21262d,stroke:#d29922,color:#e6edf3
+    style E fill:#21262d,stroke:#238636,color:#e6edf3
+    style F fill:#21262d,stroke:#238636,color:#e6edf3
+    style G fill:#21262d,stroke:#238636,color:#e6edf3
+                </div>
+                <p class="diagram-caption">Production deployment in 7 steps — from zero to running application</p>
+
+                <h3>Prerequisites</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Version</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>AWS CLI</code></td>
+                                <td>v2+</td>
+                                <td>AWS API access</td>
+                            </tr>
+                            <tr>
+                                <td><code>Node.js</code></td>
+                                <td>22 LTS</td>
+                                <td>CDK + frontend builds</td>
+                            </tr>
+                            <tr>
+                                <td><code>AWS CDK</code></td>
+                                <td>2.x</td>
+                                <td>Infrastructure deployment</td>
+                            </tr>
+                            <tr>
+                                <td><code>Docker</code></td>
+                                <td>Latest</td>
+                                <td>CDK asset bundling</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>CDK Commands</h3>
+
+                <div class="code-header">
+                    <span>Terminal</span>
+                    <span>Full Production Deployment</span>
+                </div>
+                <pre><code># 1. Install dependencies
+cd cdk && npm install
+
+# 2. Bootstrap (first time only)
+npx cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/$(aws configure get region)
+
+# 3. Deploy everything
+npx cdk deploy NitroAttestationStack --require-approval never --outputs-file cdk-outputs.json
+
+# 4. Trigger pipeline (from project root)
+./scripts/package-and-upload.sh
+
+# 5. Monitor pipeline
+aws codepipeline get-pipeline-state --name nitro-attestation-pipeline \
+  --query 'stageStates[*].{Stage:stageName,Status:latestExecution.status}' --output table
+
+# 6. Verify deployment
+API_ENDPOINT=$(aws cloudformation describe-stacks --stack-name NitroAttestationStack \
+  --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" --output text)
+curl -s "$API_ENDPOINT/health" | jq
+
+# 7. Deploy frontend
+./scripts/deploy-frontend.sh NitroAttestationStack</code></pre>
+
+                <h3>Testing</h3>
+
+                <div class="code-header">
+                    <span>Terminal</span>
+                    <span>API Tests (through API Gateway)</span>
+                </div>
+                <pre><code># Health check
+curl -s "$API_ENDPOINT/health" | jq
+
+# Generate attestation
+curl -s -X POST "$API_ENDPOINT/api/attestation" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -d '{"nonce": "test-nonce-123"}' | jq</code></pre>
+
+                <h3>Debugging on the instance</h3>
+
+                <p>The EC2 instance runs in a private isolated subnet with no inbound SSH. All
+                on-instance debugging is done over <strong>AWS Systems Manager (SSM) Session
+                Manager</strong>. CodeDeploy manages the services; the commands below are for
+                inspection and manual recovery — they are not part of the deploy flow.</p>
+
+                <div class="code-header">
+                    <span>Terminal</span>
+                    <span>Start a session</span>
+                </div>
+                <pre><code># Find the running instance (the Auto Scaling group keeps desired=1)
+INSTANCE_ID=$(aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=*NitroAttestation*" "Name=instance-state-name,Values=running" \
+  --query "Reservations[0].Instances[0].InstanceId" --output text)
+
+aws ssm start-session --target "$INSTANCE_ID"</code></pre>
+
+                <div class="code-header">
+                    <span>On the instance (via SSM)</span>
+                    <span>Inspect the enclave and services</span>
+                </div>
+                <pre><code># Enclave state (expect one enclave in the RUNNING state)
+nitro-cli describe-enclaves
+
+# systemd services: the launcher (runs the enclave) and the inbound proxy
+# (TCP :8000 NLB target -> vsock into the enclave)
+sudo systemctl status enclave-launcher
+sudo systemctl status enclave-inbound-proxy
+sudo journalctl -u enclave-launcher -f
+sudo journalctl -u enclave-inbound-proxy -f
+
+# Health and attestation, hitting the proxy -> enclave locally (no auth on the
+# in-VPC hop; the JWT is enforced at API Gateway)
+curl -s http://localhost:8000/health | jq
+curl -s -X POST http://localhost:8000/api/attestation \
+  -H "Content-Type: application/json" \
+  -d '{"nonce": "test-nonce-123"}' | jq '.status, .size_bytes, .hpke_suite'</code></pre>
+
+                <div class="code-header">
+                    <span>On the instance (via SSM)</span>
+                    <span>Restart / recover</span>
+                </div>
+                <pre><code># Restart the enclave and proxy (CodeDeploy normally does this on deploy)
+sudo systemctl restart enclave-launcher
+sudo systemctl restart enclave-inbound-proxy
+
+# Stop everything and terminate the enclave
+sudo systemctl stop enclave-inbound-proxy enclave-launcher
+nitro-cli terminate-enclave --all
+
+# Reinstall the unit files after editing them under /opt/nitro-attestation/systemd
+sudo cp /opt/nitro-attestation/systemd/*.service /etc/systemd/system/
+sudo systemctl daemon-reload
+
+# Launch the enclave manually for debugging (attaches the console; CPU/memory
+# come from the CodeBuild-generated metadata.json)
+CPU=$(jq -r '.cpu_count // 1' /opt/nitro-attestation/metadata.json)
+MEM=$(jq -r '.memory_mib // 2048' /opt/nitro-attestation/metadata.json)
+nitro-cli run-enclave --eif-path /opt/nitro-attestation/attestation-enclave.eif \
+  --memory "$MEM" --cpu-count "$CPU" --enclave-cid 16 --attach-console</code></pre>
+
+                <h3>Clean Up</h3>
+
+                <div class="code-header">
+                    <span>Terminal</span>
+                    <span>Destroy All Resources</span>
+                </div>
+                <pre><code># Empty S3 bucket first
+BUCKET=$(aws cloudformation describe-stacks --stack-name NitroAttestationStack \
+  --query "Stacks[0].Outputs[?OutputKey=='EifBucketName'].OutputValue" --output text)
+aws s3 rm s3://$BUCKET --recursive
+
+# Destroy the stack
+cd cdk && npx cdk destroy NitroAttestationStack --force</code></pre>
+
+                <div class="callout callout-info">
+                    <strong>💰 Cost Note</strong>
+                    <p>VPC Interface Endpoints incur hourly charges, and the architecture uses VPC Endpoints instead of a NAT Gateway. Refer to the AWS pricing pages for current rates, and destroy resources when not in use. See <a href="https://aws.amazon.com/privatelink/pricing/">AWS PrivateLink pricing</a>.</p>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION: Project Structure -->
+            <!-- ============================================================ -->
+            <section id="structure">
+                <h2>Project Structure</h2>
+
+                <div class="tree">
+<span class="folder">sample-nitro-enclaves-attestation-webapp/</span>
+├── <span class="folder">frontend/</span>              <span class="comment"># React + Vite SPA</span>
+│   ├── <span class="folder">src/</span>
+│   │   ├── <span class="file">App.jsx</span>             <span class="comment"># 3-step wizard UI</span>
+│   │   ├── <span class="folder">components/</span>
+│   │   │   ├── <span class="file">AuthScreen.jsx</span>       <span class="comment"># Cognito sign-in/sign-up</span>
+│   │   │   ├── <span class="file">AttestationViewer.jsx</span> <span class="comment"># Document viewer</span>
+│   │   │   └── <span class="file">ArchitectureDiagram.jsx</span> <span class="comment"># Mermaid diagrams</span>
+│   │   └── <span class="folder">lib/</span>
+│   │       ├── <span class="file">attestationVerifier.js</span> <span class="comment"># COSE/cert verification</span>
+│   │       ├── <span class="file">hpkeEncryption.js</span>    <span class="comment"># RFC 9180 HPKE</span>
+│   │       ├── <span class="file">x509Parser.js</span>        <span class="comment"># DER certificate parser</span>
+│   │       └── <span class="file">cognitoAuth.js</span>       <span class="comment"># Auth helper</span>
+│   └── <span class="file">vite.config.js</span>
+├── <span class="folder">enclave/</span>               <span class="comment"># Nitro Enclave application (serves the API directly)</span>
+│   ├── <span class="file">main.py</span>              <span class="comment"># NSM attestation + HPKE decryption API</span>
+│   ├── <span class="file">vsock-http-proxy.py</span>  <span class="comment"># in-enclave vsock → HTTP bridge</span>
+│   ├── <span class="file">start.sh</span>             <span class="comment"># Enclave startup script</span>
+│   ├── <span class="folder">shared/</span>
+│   │   └── <span class="file">nsm_client.py</span>    <span class="comment"># NSM ioctl interface</span>
+│   └── <span class="file">Dockerfile</span>           <span class="comment"># Enclave container image</span>
+├── <span class="folder">proxies/</span>               <span class="comment"># tcp-vsock-proxy.py — parent inbound proxy</span>
+├── <span class="folder">cdk/</span>                   <span class="comment"># AWS CDK infrastructure</span>
+│   ├── <span class="folder">lib/</span>
+│   │   ├── <span class="file">main-stack.ts</span>    <span class="comment"># Combined stack</span>
+│   │   └── <span class="folder">constructs/</span>      <span class="comment"># 8 modular constructs</span>
+│   └── <span class="folder">bin/</span>
+│       └── <span class="file">cdk.ts</span>           <span class="comment"># App entry point</span>
+├── <span class="folder">deploy/</span>                <span class="comment"># CodeDeploy configuration</span>
+│   ├── <span class="file">appspec.yml</span>          <span class="comment"># Deployment hooks</span>
+│   └── <span class="folder">scripts/</span>             <span class="comment"># Lifecycle scripts</span>
+├── <span class="folder">scripts/</span>               <span class="comment"># Build & management scripts</span>
+├── <span class="folder">systemd/</span>               <span class="comment"># Service definitions</span>
+├── <span class="folder">proxies/</span>               <span class="comment"># vsock proxy implementations</span>
+└── <span class="folder">docs/</span>                  <span class="comment"># This documentation</span>
+                </div>
+            </section>
+
+            <hr>
+
+            <section>
+                <h2>What's Next?</h2>
+                <p>This reference implementation demonstrates the core patterns. For production use, consider:</p>
+                <ul>
+                    <li><strong>PCR Pinning</strong> — Store expected PCR values and reject attestations that don't match</li>
+                    <li><strong>WAF</strong> — Add AWS WAF to API Gateway for rate limiting and DDoS protection</li>
+                    <li><strong>VPC Flow Logs</strong> — Enable for security monitoring and compliance</li>
+                    <li><strong>Multi-region</strong> — Deploy to multiple regions with Route 53 failover</li>
+                    <li><strong>KMS Integration</strong> — Use attestation-conditioned KMS policies for envelope encryption alongside HPKE</li>
+                </ul>
+
+                <div class="callout callout-purple">
+                    <strong>📚 Further Reading</strong>
+                    <p>
+                        <a href="https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave.html">AWS Nitro Enclaves Documentation</a> •
+                        <a href="https://www.rfc-editor.org/rfc/rfc9180">RFC 9180 — HPKE</a> •
+                        <a href="https://www.rfc-editor.org/rfc/rfc9052">RFC 9052 — COSE</a>
+                    </p>
+                </div>
+            </section>
+
+        </div>
+    </article>
+
+    <footer>
+        <div class="container">
+            <p>
+                Built with ❤️ for AWS Nitro Enclaves |
+                <a href="https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave.html" target="_blank">AWS Documentation</a> |
+                <a href="https://github.com/aws-samples" target="_blank">AWS Samples</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Diagram Fullscreen Overlay -->
+    <div class="diagram-overlay" id="diagramOverlay">
+        <div class="diagram-overlay-toolbar">
+            <button id="zoomOut" title="Zoom Out">➖ Zoom Out</button>
+            <span class="zoom-label" id="zoomLabel">100%</span>
+            <button id="zoomIn" title="Zoom In">➕ Zoom In</button>
+            <button id="zoomReset" title="Reset Zoom">↺ Reset</button>
+            <button id="zoomFit" title="Fit to Screen">⊡ Fit</button>
+        </div>
+        <div class="diagram-overlay-content" id="diagramOverlayContent">
+            <button class="diagram-overlay-close" id="diagramClose" title="Close (Esc)">✕</button>
+            <div id="diagramOverlaySvg"></div>
+        </div>
+        <div class="diagram-overlay-hint">Press <kbd style="background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;border:1px solid var(--border);">Esc</kbd> to close • Scroll to pan • Use toolbar to zoom</div>
+    </div>
+
+    <script>
+    (function() {
+        // Diagram fullscreen lightbox
+        const overlay = document.getElementById('diagramOverlay');
+        const overlayContent = document.getElementById('diagramOverlayContent');
+        const overlaySvg = document.getElementById('diagramOverlaySvg');
+        const closeBtn = document.getElementById('diagramClose');
+        const zoomInBtn = document.getElementById('zoomIn');
+        const zoomOutBtn = document.getElementById('zoomOut');
+        const zoomResetBtn = document.getElementById('zoomReset');
+        const zoomFitBtn = document.getElementById('zoomFit');
+        const zoomLabel = document.getElementById('zoomLabel');
+
+        let currentZoom = 1;
+        const ZOOM_STEP = 0.25;
+        const MIN_ZOOM = 0.5;
+        const MAX_ZOOM = 3;
+
+        function updateZoom() {
+            const svg = overlaySvg.querySelector('svg');
+            if (svg) {
+                svg.style.transform = `scale(${currentZoom})`;
+                svg.style.transformOrigin = 'top left';
+            }
+            zoomLabel.textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        function openDiagram(mermaidEl) {
+            const svg = mermaidEl.querySelector('svg');
+            if (!svg) return;
+
+            // Clone the SVG into the overlay
+            const clone = svg.cloneNode(true);
+            clone.style.minWidth = 'unset';
+            clone.style.maxWidth = 'none';
+            clone.style.width = 'auto';
+            clone.style.height = 'auto';
+            overlaySvg.innerHTML = '';
+            overlaySvg.appendChild(clone);
+
+            // Reset zoom
+            currentZoom = 1;
+            updateZoom();
+
+            // Show overlay
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDiagram() {
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+            overlaySvg.innerHTML = '';
+        }
+
+        // Close handlers
+        closeBtn.addEventListener('click', closeDiagram);
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) closeDiagram();
+        });
+
+        // Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                closeDiagram();
+            }
+        });
+
+        // Zoom controls
+        zoomInBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
+            updateZoom();
+        });
+
+        zoomOutBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
+            updateZoom();
+        });
+
+        zoomResetBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            currentZoom = 1;
+            updateZoom();
+        });
+
+        zoomFitBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const svg = overlaySvg.querySelector('svg');
+            if (!svg) return;
+            // Reset to measure natural size
+            svg.style.transform = 'scale(1)';
+            const svgRect = svg.getBoundingClientRect();
+            const containerRect = overlayContent.getBoundingClientRect();
+            const padding = 80;
+            const scaleX = (containerRect.width - padding) / svgRect.width;
+            const scaleY = (containerRect.height - padding) / svgRect.height;
+            currentZoom = Math.min(scaleX, scaleY, MAX_ZOOM);
+            currentZoom = Math.max(currentZoom, MIN_ZOOM);
+            updateZoom();
+        });
+
+        // After Mermaid renders, add expand buttons to all diagrams
+        function addExpandButtons() {
+            const diagrams = document.querySelectorAll('.mermaid');
+            diagrams.forEach(function(diagram) {
+                // Skip if already has button
+                if (diagram.querySelector('.diagram-expand-btn')) return;
+
+                const btn = document.createElement('button');
+                btn.className = 'diagram-expand-btn';
+                btn.title = 'View fullscreen';
+                btn.innerHTML = '⛶';
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openDiagram(diagram);
+                });
+                diagram.appendChild(btn);
+
+                // Also allow clicking the diagram itself to expand
+                diagram.style.cursor = 'zoom-in';
+                diagram.addEventListener('click', function(e) {
+                    if (e.target.closest('.diagram-expand-btn')) return;
+                    openDiagram(diagram);
+                });
+            });
+        }
+
+        // Wait for Mermaid to finish rendering
+        if (typeof MutationObserver !== 'undefined') {
+            let timeout;
+            const observer = new MutationObserver(function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(addExpandButtons, 500);
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            // Also try after a delay in case observer misses it
+            setTimeout(addExpandButtons, 2000);
+        } else {
+            window.addEventListener('load', function() {
+                setTimeout(addExpandButtons, 1500);
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

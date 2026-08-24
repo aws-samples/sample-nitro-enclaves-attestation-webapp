@@ -1,0 +1,19 @@
+[Unit]
+Description=Enclave inbound proxy (TCP :8000 NLB target -> vsock into the enclave)
+After=network.target enclave-launcher.service
+Wants=enclave-launcher.service
+
+[Service]
+Type=simple
+User=root
+# Listen on TCP :8000 (the NLB target port) and forward to the enclave over vsock
+# (CID 16, port 8000). This is the only thing on the parent in the request path;
+# there is no application-layer backend proxy.
+ExecStart=/usr/bin/python3 /opt/nitro-attestation/proxies/tcp-vsock-proxy.py 8000 16 8000
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

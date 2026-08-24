@@ -1,0 +1,225 @@
+{
+  "auth": {
+    "screen": {
+      "title": "Nitro Attestation",
+      "subtitle": "AWS Nitro Enclaves Attestation Demo",
+      "firstLoginLabel": "First Login:",
+      "firstLoginText": "Please set a new password.",
+      "verifyInfo": "Enter the verification code sent to your email.",
+      "footer": "Powered by Amazon Cognito • AWS Nitro Enclaves"
+    },
+    "labels": {
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "newPassword": "New Password",
+      "confirmNewPassword": "Confirm New Password",
+      "verificationCode": "Verification Code"
+    },
+    "helper": {
+      "newPassword": "Min 8 chars with uppercase, lowercase, and numbers",
+      "password": "Min 8 chars: uppercase, lowercase, and numbers"
+    },
+    "tabs": {
+      "signIn": "Sign In",
+      "signUp": "Sign Up",
+      "verify": "Verify"
+    },
+    "buttons": {
+      "signIn": "Sign In",
+      "signingIn": "Signing in...",
+      "createAccount": "Create Account",
+      "creatingAccount": "Creating account...",
+      "verifyEmail": "Verify Email",
+      "verifying": "Verifying...",
+      "resendCode": "Resend Verification Code",
+      "setNewPassword": "Set New Password",
+      "settingPassword": "Setting password...",
+      "backToLogin": "← Back to login"
+    },
+    "prompts": {
+      "noAccount": "Don't have an account?",
+      "haveAccount": "Already have an account?"
+    }
+  },
+  "app": {
+    "header": {
+      "title": "Nitro Enclaves Attestation"
+    },
+    "nav": {
+      "architecture": "Architecture",
+      "backToApp": "Back to App",
+      "signOut": "Sign Out"
+    }
+  },
+  "common": {
+    "unit": {
+      "bytes": "{{n}} bytes",
+      "bytesDer": "{{n}} bytes (DER)",
+      "bytesDerEncoded": "{{n}} bytes (DER encoded)"
+    },
+    "value": {
+      "none": "(none)",
+      "na": "N/A"
+    },
+    "action": {
+      "close": "Close",
+      "view": "View"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "generate": "Generate Attestation Document",
+      "verify": "Attestation Verification",
+      "secureEcho": "Secure Message Echo"
+    },
+    "nav": {
+      "back": "Back",
+      "done": "Done",
+      "verifyNext": "Verify →",
+      "secureNext": "Secure Message →"
+    },
+    "step1": {
+      "title": "Generate Attestation Document",
+      "intro": "Request an attestation document from the Nitro Enclave. Optionally include a nonce for freshness.",
+      "nonceLabel": "Nonce (optional)",
+      "noncePlaceholder": "Hex nonce for freshness",
+      "randomNonce": "🎲 Random Nonce",
+      "userDataLabel": "User Data (optional)",
+      "userDataPlaceholder": "Custom data",
+      "fetch": "Fetch Attestation Document",
+      "fetching": "Fetching...",
+      "received": "✅ Attestation Document Received",
+      "size": "Size",
+      "environment": "Environment",
+      "rawBase64": "Raw Base64 Document"
+    },
+    "step2": {
+      "title": "Attestation Verification",
+      "clientSide": "Client-Side",
+      "intro": "Verifying COSE signature, certificate chain, and extracting enclave public key — all in your browser.",
+      "verifying": "Verifying attestation document...",
+      "verifyNow": "Verify Now",
+      "verified": "Verified ✓",
+      "failed": "Verification Failed",
+      "publicKeyExtracted": "🔑 Public Key Extracted",
+      "signedInputs": "Signed inputs (echoed in the attestation)",
+      "nonce": "Nonce",
+      "userData": "User data",
+      "match": "match",
+      "noMatch": "no match",
+      "notSent": "not sent",
+      "sent": "Sent:",
+      "inDocument": "In document:",
+      "stepsTitle": "Verification Steps ({{n}})",
+      "certChainTitle": "🔗 Certificate Chain ({{n}} certificates)",
+      "certChainHint": "Click any certificate to view its details and PEM content.",
+      "pcrTitle": "PCR Values",
+      "pcr": "PCR",
+      "pcrValue": "Value (hex)",
+      "metadataTitle": "Attestation Metadata",
+      "moduleId": "Module ID:",
+      "timestamp": "Timestamp:",
+      "digest": "Digest:"
+    },
+    "step3": {
+      "title": "Secure Message Echo (HPKE)",
+      "info": "Your message is encrypted using <b>HPKE (RFC 9180)</b> with the enclave's verified P-256 public key. The enclave decrypts it, processes it, and sends back an encrypted response that only you can decrypt.",
+      "messageLabel": "Secret message to encrypt and send to enclave",
+      "messagePlaceholder": "Type your secret message here... The enclave will echo it back encrypted.",
+      "send": "🔐 Encrypt & Send to Enclave",
+      "sending": "Encrypting & Sending...",
+      "responseTitle": "Response from Enclave",
+      "decryptedLabel": "Decrypted:",
+      "rawPayload": "Raw encrypted response payload"
+    }
+  },
+  "cert": {
+    "field": {
+      "version": "Version",
+      "serialNumber": "Serial Number",
+      "subject": "Subject",
+      "issuer": "Issuer",
+      "validFrom": "Valid From",
+      "validUntil": "Valid Until",
+      "signatureAlgorithm": "Signature Algorithm",
+      "publicKey": "Public Key",
+      "publicKeyValue": "{{algorithm}} ({{bits}} bits)",
+      "size": "Size"
+    },
+    "ext": {
+      "title": "Extensions ({{n}})",
+      "name": "Extension",
+      "critical": "Critical",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "format": {
+      "pem": "PEM Format"
+    },
+    "action": {
+      "copyPem": "Copy PEM"
+    }
+  },
+  "diagram": {
+    "view": {
+      "heading": "System Architecture",
+      "loading": "Loading diagram...",
+      "navigator": "Navigator",
+      "zoom": "Zoom"
+    },
+    "hints": {
+      "scroll": "• Scroll to zoom",
+      "drag": "• Drag to pan (when zoomed)",
+      "miniMap": "• Click mini-map to navigate",
+      "esc": "• Press Esc to close"
+    },
+    "tooltips": {
+      "openFullscreen": "Open fullscreen viewer (Esc to close)",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "reset": "Reset view",
+      "fit": "Fit to screen",
+      "close": "Close (Esc)"
+    },
+    "tabs": {
+      "infrastructure": {
+        "label": "Infrastructure",
+        "title": "Infrastructure Overview",
+        "description": "Full system architecture: Browser → Cognito → API Gateway → VPC Link → NLB → EC2 inbound proxy → vsock → Nitro Enclave, with automated CI/CD pipeline."
+      },
+      "flow": {
+        "label": "Attestation Flow",
+        "title": "Attestation & HPKE Encryption Flow",
+        "description": "Complete sequence: authentication → attestation generation → client-side verification → HPKE encrypted communication. Plaintext never travels over the network."
+      },
+      "cicd": {
+        "label": "CI/CD Pipeline",
+        "title": "CI/CD Pipeline",
+        "description": "Automated deployment: upload source → EventBridge triggers CodePipeline → CodeBuild creates the EIF → CodeDeploy rolls out to EC2 with zero downtime."
+      },
+      "security": {
+        "label": "Security",
+        "title": "Key Security Features"
+      }
+    },
+    "security": {
+      "hpkeLabel": "HPKE (RFC 9180):",
+      "hpkeText": "Hybrid Public Key Encryption with DHKEM(P-256, HKDF-SHA256) + AES-128-GCM",
+      "e2eLabel": "True End-to-End Encryption:",
+      "e2eText": "Plaintext NEVER travels over the network — encrypted in browser, decrypted only in enclave",
+      "browserLabel": "Browser-side Verification:",
+      "browserText": "Attestation documents verified entirely in browser using COSE/CBOR",
+      "keyLabel": "Private Key Isolation:",
+      "keyText": "HPKE private key generated and kept only within the Nitro Enclave memory",
+      "chainLabel": "Certificate Chain Validation:",
+      "chainText": "Full verification against AWS Nitro Root CA (P-384)",
+      "biLabel": "Bidirectional Encryption:",
+      "biText": "Responses encrypted using HPKE exported keys, decrypted in browser",
+      "ztLabel": "Zero Trust Network:",
+      "ztText": "Fully private VPC with no NAT Gateway — VPC Endpoints only",
+      "cicdLabel": "Automated CI/CD:",
+      "cicdText": "S3 → EventBridge → CodePipeline → CodeBuild → CodeDeploy lifecycle"
+    }
+  }
+}

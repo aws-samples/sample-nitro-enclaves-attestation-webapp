@@ -1,0 +1,30 @@
+[Unit]
+Description=Nitro Enclave launcher (runs the attestation enclave via nitro-cli)
+After=nitro-enclaves-allocator.service
+Wants=nitro-enclaves-allocator.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/nitro-attestation
+
+# Terminate any existing enclave before starting
+ExecStartPre=-/usr/bin/nitro-cli terminate-enclave --all
+ExecStartPre=-/bin/sleep 1
+
+# Read resource requirements from metadata and launch enclave (non-debug: no --attach-console)
+# nitro-cli run-enclave returns immediately after launching, so we use Type=oneshot
+ExecStart=/bin/bash -c 'CPU=$$(jq -r ".cpu_count // 1" /opt/nitro-attestation/metadata.json) && MEM=$$(jq -r ".memory_mib // 2048" /opt/nitro-attestation/metadata.json) && /usr/bin/nitro-cli run-enclave --eif-path /opt/nitro-attestation/attestation-enclave.eif --memory $$MEM --cpu-count $$CPU --enclave-cid 16'
+
+# Terminate enclave on stop
+ExecStop=/usr/bin/nitro-cli terminate-enclave --all
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+
+# Give it time to terminate gracefully
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

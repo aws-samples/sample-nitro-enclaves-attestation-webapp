@@ -1,0 +1,20 @@
+# Enclave dependencies.
+#
+# Compatible version ranges (not exact pins). The enclave base image
+# (public.ecr.aws/amazonlinux/amazonlinux:2023) is a moving tag whose Python can
+# change; exact pins captured from a previous image break the build when the base
+# drifts (a specific wheel version stops resolving). Ranges let pip choose wheels
+# compatible with the current base.
+#
+# For byte-for-byte reproducible measurements (PCRs): pin the base image by digest
+# (BASE_IMAGE build-arg in the Dockerfile) AND generate a fully hash-locked
+# requirements file with pip-compile inside that exact image. Do not pin exact
+# versions here without also pinning the base digest.
+fastapi>=0.104.1,<0.112.0
+uvicorn[standard]>=0.24.0,<0.30.0
+pydantic>=2.5.0,<2.7.0
+cbor2>=5.4.6
+cryptography>=41.0.7
+pyhpke>=0.6.0
+python-multipart>=0.0.6
+requests>=2.31.0

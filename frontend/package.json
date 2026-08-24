@@ -1,0 +1,38 @@
+{
+  "name": "nitro-attestation-frontend",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --port 3000 --host"
+  },
+  "dependencies": {
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@hpke/core": "1.9.0",
+    "@hpke/dhkem-secp256k1": "1.8.0",
+    "@mui/icons-material": "5.18.0",
+    "@mui/material": "5.18.0",
+    "amazon-cognito-identity-js": "6.3.18",
+    "axios": "1.18.1",
+    "cbor-web": "9.0.2",
+    "hpke-js": "1.8.0",
+    "i18next": "23.16.8",
+    "mermaid": "10.9.8",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-i18next": "15.1.4"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "5.2.0",
+    "vite": "7.3.6"
+  },
+  "overrides": {
+    "dompurify": "3.4.14"
+  }
+}
