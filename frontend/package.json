@@ -17,7 +17,7 @@
     "@mui/icons-material": "5.18.0",
     "@mui/material": "5.18.0",
     "amazon-cognito-identity-js": "6.3.18",
-    "axios": "1.18.1",
+    "axios": "1.20.0",
     "cbor-web": "9.0.2",
     "hpke-js": "1.8.0",
     "i18next": "23.16.8",
